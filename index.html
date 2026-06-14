@@ -24,7 +24,6 @@
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   html, body { height: 100%; }
-
   body {
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg);
@@ -41,7 +40,8 @@
   header {
     width: 100%; max-width: 500px;
     display: flex; align-items: center;
-    padding: 10px 12px 6px; gap: 6px;
+    padding: 6px 12px 4px; gap: 6px;
+    flex-shrink: 0;
   }
   .icon-btn {
     width: 33px; height: 33px; flex-shrink: 0;
@@ -72,7 +72,8 @@
   /* ── STATS BAR: Hatalar | İpucu | Zorluk ── */
   .stats-bar {
     width: 100%; max-width: 500px;
-    display: flex; gap: 6px; padding: 0 12px 8px;
+    display: flex; gap: 6px; padding: 0 12px 5px;
+    flex-shrink: 0;
   }
   .stat-box {
     flex: 1; background: var(--srf);
@@ -94,11 +95,11 @@
   /* ── GRID + NUMPAD ROW ── */
   .grid-area {
     width: 100%; max-width: 500px;
-    display: flex; flex-direction: row; align-items: stretch;
-    padding: 0 12px 8px; gap: 6px;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 12px 4px; gap: 6px;
   }
   .grid-wrapper {
-    flex: 1; display: flex; justify-content: center; min-width: 0;
+    width: 100%; display: flex; justify-content: center;
   }
   #grid-canvas {
     border-radius: 10px; cursor: pointer; touch-action: none; display: block;
@@ -108,10 +109,12 @@
   /* ── CONTROLS ── */
   .controls {
     width: 100%; max-width: 500px;
-    display: flex; gap: 6px; padding: 0 12px 6px;
+    display: flex; gap: 6px;
+    padding: 0 12px env(safe-area-inset-bottom, 8px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
   }
   .ctrl-btn {
-    flex: 1; padding: 7px 4px 5px;
+    flex: 1; padding: 6px 4px 5px;
     border: 1px solid var(--brd); border-radius: 10px;
     background: var(--srf); color: var(--txt);
     font-size: .6rem; font-weight: 700; cursor: pointer;
@@ -123,13 +126,13 @@
   .ctrl-btn:active { transform: scale(.9); opacity: .7; }
   .ctrl-btn.notes-active { border-color: var(--txt); }
 
-  /* ── NUMPAD — vertical column right of grid ── */
+  /* ── NUMPAD — horizontal row below grid ── */
   .numpad {
-    display: flex; flex-direction: column;
-    gap: 3px; width: 38px; flex-shrink: 0; padding-bottom: 4px;
+    display: flex; flex-direction: row;
+    gap: 4px; width: 100%; padding: 0;
   }
   .num-btn {
-    flex: 1; width: 100%; aspect-ratio: 1;
+    flex: 1; aspect-ratio: 1;
     border: 1px solid var(--brd); border-radius: 9px;
     background: var(--srf); color: var(--txt);
     font-size: 1.3rem; font-weight: 900; cursor: pointer;
@@ -245,7 +248,7 @@
     .stat-value.diff-val { font-size: .66rem; }
 
     .grid-area { padding: 0 10px 6px; gap: 5px; }
-    .numpad { width: 34px; gap: 3px; }
+    .numpad { gap: 3px; }
     .num-btn { font-size: 1.15rem; border-radius: 8px; }
     .num-badge { font-size: .36rem; }
 
@@ -261,7 +264,7 @@
     .stats-bar { padding: 0 8px 5px; gap: 4px; }
     .stat-box  { padding: 4px 4px; }
     .grid-area { padding: 0 8px 5px; gap: 4px; }
-    .numpad { width: 30px; gap: 2px; }
+    .numpad { gap: 2px; }
     .num-btn { font-size: 1rem; }
     .controls { padding: 0 8px 5px; gap: 4px; }
     .ctrl-btn { padding: 6px 3px 4px; font-size: .52rem; }
@@ -284,7 +287,7 @@
     .stat-label { font-size: .44rem; }
     .stat-value { font-size: .7rem; margin-top: 0; }
     .grid-area { padding: 0 10px 3px; }
-    .numpad { width: 28px; gap: 2px; }
+    .numpad { gap: 2px; }
     .num-btn { font-size: .9rem; }
     .controls { padding: 0 10px 3px; }
     .ctrl-btn { padding: 4px 3px 3px; font-size: .5rem; }
@@ -586,8 +589,8 @@ let CELL=46, PAD=3;
 
 function setupCanvas(){
   const wrapper=document.querySelector('.grid-wrapper');
-  const avail=Math.min(wrapper.clientWidth-2, window.innerWidth-60, 460);
-  CELL=Math.max(24,Math.floor(avail/9));
+  const avail=Math.min(wrapper.clientWidth-2, window.innerWidth-24, 500);
+  CELL=Math.max(28,Math.floor(avail/9));
   const GS=CELL*9, dpr=Math.min(window.devicePixelRatio||1, 3);
   cv.width=(GS+PAD*2)*dpr; cv.height=(GS+PAD*2)*dpr;
   cv.style.width=(GS+PAD*2)+'px'; cv.style.height=(GS+PAD*2)+'px';
@@ -670,11 +673,12 @@ function draw(){
 
   // Pre-measure each cage label so we know how much space to leave
   const lblFs=Math.max(11,CELL*.28|0);
-  ctx.font=`700 ${lblFs}px 'Inter',sans-serif`;
   const lblMap={};
   for(const cage of S.cages){
     const[lr,lc]=cage.lbl;
-    lblMap[lr*9+lc]={lw:ctx.measureText(cage.sum).width+3, lh:lblFs+1};
+    const fs2=cage.sum>=10 ? Math.max(9,lblFs-2) : lblFs;
+    ctx.font=`700 ${fs2}px 'Inter',sans-serif`;
+    lblMap[lr*9+lc]={lw:ctx.measureText(cage.sum).width+3, lh:fs2+1};
   }
 
   ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
@@ -762,7 +766,7 @@ function draw(){
   /* ── 8. Cage sum labels (opaque bg rect to hide dash underneath) ── */
   for(const cage of S.cages){
     const[lr,lc]=cage.lbl;
-    const fs=lblFs;
+    const fs=cage.sum>=10 ? Math.max(9,lblFs-2) : lblFs;
     ctx.font=`700 ${fs}px 'Inter',sans-serif`;
     ctx.textAlign='left'; ctx.textBaseline='top';
     const lx=PAD+lc*CELL+INS+2, ly=PAD+lr*CELL+INS-1;
@@ -1142,4 +1146,3 @@ init();
 </script>
 </body>
 </html>
-
